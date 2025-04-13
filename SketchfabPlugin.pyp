@@ -53,8 +53,8 @@ class SketchfabImporter(plugins.CommandData):
         from sketchfab import ui_importer
 
         # Check C4D version
-        if c4d.GetC4DVersion() < 20000 and c4d.GeGetCurrentOS() == c4d.OPERATINGSYSTEM_WIN:
-            c4d.gui.MessageDialog("Sorry, but the plugin is incompatible with the version of Cinema 4D you are currently running.\n\nThe Sketchfab plugin for Windows requires\nCinema 4D R20 or greater.", c4d.GEMB_OK)
+        if c4d.GetC4DVersion() < 2024000 and c4d.GeGetCurrentOS() == c4d.OPERATINGSYSTEM_WIN:
+            c4d.gui.MessageDialog("Sorry, but the plugin is incompatible with the version of Cinema 4D you are currently running.\n\nThe Sketchfab plugin for Windows requires\nCinema 4D 2024 or greater.", c4d.GEMB_OK)
             return False
 
         if self.dialog is None:
@@ -79,8 +79,8 @@ class SketchfabExporter(plugins.CommandData):
         from sketchfab import ui_exporter
 
         # Check C4D version
-        if c4d.GetC4DVersion() < 20000 and c4d.GeGetCurrentOS() == c4d.OPERATINGSYSTEM_WIN:
-            c4d.gui.MessageDialog("Sorry, but the plugin is incompatible with the version of Cinema 4D you are currently running.\n\nThe Sketchfab plugin for Windows requires\nCinema 4D R20 or greater.", c4d.GEMB_OK)
+        if c4d.GetC4DVersion() < 2024000 and c4d.GeGetCurrentOS() == c4d.OPERATINGSYSTEM_WIN:
+            c4d.gui.MessageDialog("Sorry, but the plugin is incompatible with the version of Cinema 4D you are currently running.\n\nThe Sketchfab plugin for Windows requires\nCinema 4D 2024000 or greater.", c4d.GEMB_OK)
             return False
 
         if self.dialog is None:

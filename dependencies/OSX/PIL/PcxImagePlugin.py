@@ -24,12 +24,13 @@
 #
 # See the README file for information on usage and redistribution.
 #
+from __future__ import annotations
 
 import io
 import logging
+from typing import IO
 
 from . import Image, ImageFile, ImagePalette
-from ._binary import i8
 from ._binary import i16le as i16
 from ._binary import o8
 from ._binary import o16le as o16
@@ -37,8 +38,8 @@ from ._binary import o16le as o16
 logger = logging.getLogger(__name__)
 
 
-def _accept(prefix):
-    return i8(prefix[0]) == 10 and i8(prefix[1]) in [0, 2, 3, 5]
+def _accept(prefix: bytes) -> bool:
+    return prefix[0] == 10 and prefix[1] in [0, 2, 3, 5]
 
 
 ##
@@ -46,34 +47,36 @@ def _accept(prefix):
 
 
 class PcxImageFile(ImageFile.ImageFile):
-
     format = "PCX"
     format_description = "Paintbrush"
 
-    def _open(self):
-
+    def _open(self) -> None:
         # header
+        assert self.fp is not None
+
         s = self.fp.read(128)
         if not _accept(s):
-            raise SyntaxError("not a PCX file")
+            msg = "not a PCX file"
+            raise SyntaxError(msg)
 
         # image
         bbox = i16(s, 4), i16(s, 6), i16(s, 8) + 1, i16(s, 10) + 1
         if bbox[2] <= bbox[0] or bbox[3] <= bbox[1]:
-            raise SyntaxError("bad PCX image size")
+            msg = "bad PCX image size"
+            raise SyntaxError(msg)
         logger.debug("BBox: %s %s %s %s", *bbox)
 
         # format
-        version = i8(s[1])
-        bits = i8(s[3])
-        planes = i8(s[65])
-        stride = i16(s, 66)
+        version = s[1]
+        bits = s[3]
+        planes = s[65]
+        provided_stride = i16(s, 66)
         logger.debug(
             "PCX version %s, bits %s, planes %s, stride %s",
             version,
             bits,
             planes,
-            stride,
+            provided_stride,
         )
 
         self.info["dpi"] = i16(s, 12), i16(s, 14)
@@ -83,7 +86,7 @@ class PcxImageFile(ImageFile.ImageFile):
 
         elif bits == 1 and planes in (2, 4):
             mode = "P"
-            rawmode = "P;%dL" % planes
+            rawmode = f"P;{planes}L"
             self.palette = ImagePalette.raw("RGB", s[16:64])
 
         elif version == 5 and bits == 8 and planes == 1:
@@ -91,8 +94,8 @@ class PcxImageFile(ImageFile.ImageFile):
             # FIXME: hey, this doesn't work with the incremental loader !!!
             self.fp.seek(-769, io.SEEK_END)
             s = self.fp.read(769)
-            if len(s) == 769 and i8(s[0]) == 12:
-                # check if the palette is linear greyscale
+            if len(s) == 769 and s[0] == 12:
+                # check if the palette is linear grayscale
                 for i in range(256):
                     if s[i * 3 + 1 : i * 3 + 4] != o8(i) * 3:
                         mode = rawmode = "P"
@@ -106,15 +109,28 @@ class PcxImageFile(ImageFile.ImageFile):
             rawmode = "RGB;L"
 
         else:
-            raise OSError("unknown PCX mode")
+            msg = "unknown PCX mode"
+            raise OSError(msg)
 
-        self.mode = mode
+        self._mode = mode
         self._size = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+        # Don't trust the passed in stride.
+        # Calculate the approximate position for ourselves.
+        # CVE-2020-35653
+        stride = (self._size[0] * bits + 7) // 8
+
+        # While the specification states that this must be even,
+        # not all images follow this
+        if provided_stride != stride:
+            stride += stride % 2
 
         bbox = (0, 0) + self.size
         logger.debug("size: %sx%s", *self.size)
 
-        self.tile = [("pcx", bbox, self.fp.tell(), (rawmode, planes * stride))]
+        self.tile = [
+            ImageFile._Tile("pcx", bbox, self.fp.tell(), (rawmode, planes * stride))
+        ]
 
 
 # --------------------------------------------------------------------
@@ -130,12 +146,12 @@ SAVE = {
 }
 
 
-def _save(im, fp, filename):
-
+def _save(im: Image.Image, fp: IO[bytes], filename: str | bytes) -> None:
     try:
         version, bits, planes, rawmode = SAVE[im.mode]
     except KeyError as e:
-        raise ValueError(f"Cannot save {im.mode} images as PCX") from e
+        msg = f"Cannot save {im.mode} images as PCX"
+        raise ValueError(msg) from e
 
     # bytes per plane
     stride = (im.size[0] * bits + 7) // 8
@@ -184,14 +200,18 @@ def _save(im, fp, filename):
 
     assert fp.tell() == 128
 
-    ImageFile._save(im, fp, [("pcx", (0, 0) + im.size, 0, (rawmode, bits * planes))])
+    ImageFile._save(
+        im, fp, [ImageFile._Tile("pcx", (0, 0) + im.size, 0, (rawmode, bits * planes))]
+    )
 
     if im.mode == "P":
         # colour palette
         fp.write(o8(12))
-        fp.write(im.im.getpalette("RGB", "RGB"))  # 768 bytes
+        palette = im.im.getpalette("RGB", "RGB")
+        palette += b"\x00" * (768 - len(palette))
+        fp.write(palette)  # 768 bytes
     elif im.mode == "L":
-        # greyscale palette
+        # grayscale palette
         fp.write(o8(12))
         for i in range(256):
             fp.write(o8(i) * 3)
