@@ -349,7 +349,7 @@ class SkfbPluginDialog(ui_login.SketchfabDialogWithLogin):
 
         if self.result_valid() and len(self.skfb_api.search_results['current']) > 0:
             self.AddButton(id=BTN_PREV_PAGE, flags=c4d.BFH_LEFT | c4d.BFV_CENTER, initw=75, inith=TEXT_WIDGET_HEIGHT, name="Previous")
-            self.AddSeparatorV(inith=0.0, flags=c4d.BFH_SCALE)
+            self.AddSeparatorV(inith=0, flags=c4d.BFH_SCALE)
             self.AddButton(id=BTN_NEXT_PAGE, flags=c4d.BFH_RIGHT | c4d.BFV_CENTER, initw=75, inith=TEXT_WIDGET_HEIGHT, name="Next")
             self.Enable(BTN_PREV_PAGE, self.skfb_api.has_prev())
             self.Enable(BTN_NEXT_PAGE, self.skfb_api.has_next())

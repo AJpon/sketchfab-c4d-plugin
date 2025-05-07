@@ -202,7 +202,7 @@ class SketchfabDialogWithLogin(c4d.gui.GeDialog):
 
         self.LayoutFlushGroup(GROUP_FOOTER)
         self.GroupBorderSpace(6, 2, 6, 6)
-        self.AddSeparatorV(0.0, flags=c4d.BFH_SCALE)
+        self.AddSeparatorV(inith=0, flags=c4d.BFH_SCALE)
 
         self.GroupBegin(GROUP_FOOTER_VERSION, c4d.BFH_RIGHT | c4d.BFV_CENTER, 5, 1, "Footer_version")
         self.draw_version_ui()

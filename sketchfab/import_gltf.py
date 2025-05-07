@@ -355,10 +355,10 @@ class ImportGLTF(plugins.ObjectData):
                     uvtag.SetName(texcoord_key)
                     for i in range(0, nb_poly):
                         poly = c4d_mesh.GetPolygon(i)
-                        aa = (uvs[poly.a][0], uvs[poly.a][1], 0.0)
-                        bb = (uvs[poly.b][0], uvs[poly.b][1], 0.0)
-                        cc = (uvs[poly.c][0], uvs[poly.c][1], 0.0)
-                        uvtag.SetSlow(i, aa, bb, cc, (0.0, 0.0, 0.0))
+                        aa = c4d.Vector(uvs[poly.a][0], uvs[poly.a][1], 0.0)
+                        bb = c4d.Vector(uvs[poly.b][0], uvs[poly.b][1], 0.0)
+                        cc = c4d.Vector(uvs[poly.c][0], uvs[poly.c][1], 0.0)
+                        uvtag.SetSlow(i, aa, bb, cc, c4d.Vector(0.0, 0.0, 0.0))
 
                     c4d_mesh.InsertTag(uvtag)
 
